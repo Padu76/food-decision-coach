@@ -1,9 +1,18 @@
-import type { FDCMode } from "./types";
+import type { FDCMode, FDCGoal } from "./types";
 
 const SYSTEM_BASE = `Sei Food Decision Coach, un assistente decisionale sul cibo.
 NON sei un nutrizionista e NON fai diagnosi mediche. Sei un aiuto pratico per scegliere in fretta.
 Rispondi SEMPRE in italiano. Sii diretto, concreto, senza gergo tecnico.
 Il tuo output DEVE essere un JSON valido, senza markdown, senza backtick, senza testo extra.`;
+
+const GOAL_INSTRUCTIONS: Record<string, string> = {
+  dimagrire: `\n\nOBIETTIVO UTENTE: Dimagrire / perdere peso.
+Privilegia piatti/prodotti a basso contenuto calorico, ricchi di proteine e fibre, con pochi grassi saturi e zuccheri. Penalizza porzioni abbondanti, condimenti pesanti, carboidrati raffinati in eccesso.`,
+  energia: `\n\nOBIETTIVO UTENTE: Più energia / performance.
+Privilegia piatti/prodotti con buon apporto di carboidrati complessi, proteine, grassi buoni, vitamine e minerali. Penalizza cibi ultra-processati, eccesso di zuccheri semplici, piatti che causano sonnolenza post-prandiale.`,
+  equilibrio: `\n\nOBIETTIVO UTENTE: Equilibrio / mangiare meglio in generale.
+Privilegia piatti/prodotti bilanciati tra macro-nutrienti, con ingredienti reali e poco processati. Penalizza eccessi in una direzione (troppo grasso, troppo zuccherino, troppo calorico).`,
+};
 
 const MENU_COACH_SYSTEM = `${SYSTEM_BASE}
 
@@ -58,8 +67,10 @@ REGOLE:
 - Se c'è un solo prodotto, valutalo e indica se è una buona o cattiva scelta senza confronto.
 - Se i prodotti sono illeggibili, metti "summary": "Prodotti non sufficientemente leggibili" e bestChoice/alternative con product vuoto.`;
 
-export function getSystemPrompt(mode: FDCMode): string {
-  return mode === "menu-coach" ? MENU_COACH_SYSTEM : SPESA_HEALTHY_SYSTEM;
+export function getSystemPrompt(mode: FDCMode, goal?: FDCGoal): string {
+  const base = mode === "menu-coach" ? MENU_COACH_SYSTEM : SPESA_HEALTHY_SYSTEM;
+  const goalExtra = goal && GOAL_INSTRUCTIONS[goal] ? GOAL_INSTRUCTIONS[goal] : "";
+  return base + goalExtra;
 }
 
 export function getUserPrompt(mode: FDCMode, text?: string): string {

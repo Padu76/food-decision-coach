@@ -1,10 +1,12 @@
 export type FDCMode = "menu-coach" | "spesa-healthy";
 export type FDCInputType = "text" | "image";
+export type FDCGoal = "dimagrire" | "energia" | "equilibrio" | null;
 
 /* ── Request ── */
 export interface FDCAnalyzeRequest {
   mode: FDCMode;
   inputType: FDCInputType;
+  goal?: FDCGoal;
   text?: string;
   imageBase64?: string;
 }
@@ -39,6 +41,16 @@ export interface SpesaHealthyResult {
 }
 
 export type FDCResult = MenuCoachResult | SpesaHealthyResult;
+
+/* ── History entry (localStorage) ── */
+export interface FDCHistoryEntry {
+  id: string;
+  date: string;
+  mode: FDCMode;
+  goal: FDCGoal;
+  inputPreview: string;
+  result: FDCResult;
+}
 
 /* ── API response envelope ── */
 export interface FDCApiResponse {

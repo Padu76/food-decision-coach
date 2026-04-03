@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { mode, inputType, text, imageBase64 } = body;
+  const { mode, inputType, goal, text, imageBase64 } = body;
 
   if (!mode || !["menu-coach", "spesa-healthy"].includes(mode)) {
     return NextResponse.json<FDCApiResponse>(
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   }
 
   /* 4. Deduct credits via UtilityLab Hub */
-  const creditResult = await ULCredits.deduct(auth.token, mode, { mode, inputType });
+  const creditResult = await ULCredits.deduct(auth.token, mode, { mode, inputType, goal: goal || null });
 
   if (!creditResult.ok) {
     if (creditResult.code === "INSUFFICIENT_CREDITS") {
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
   }
 
   /* 5. Build OpenAI messages */
-  const systemPrompt = getSystemPrompt(mode);
+  const systemPrompt = getSystemPrompt(mode, goal);
   const userText = getUserPrompt(mode, inputType === "text" ? text : undefined);
 
   type OAIContent =
