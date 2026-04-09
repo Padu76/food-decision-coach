@@ -120,11 +120,37 @@ export default function FoodDecisionCoachPage() {
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<FDCHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [user, setUser] = useState<{ name?: string; avatar?: string; email?: string } | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Load history on mount
+  // Load history + check auth on mount
   useEffect(() => {
     setHistory(loadHistory());
+    const sb = supabaseBrowser();
+    sb.auth.getSession().then(({ data }) => {
+      const u = data?.session?.user;
+      if (u) {
+        setUser({
+          name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0],
+          avatar: u.user_metadata?.avatar_url || u.user_metadata?.picture,
+          email: u.email,
+        });
+      }
+    });
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const u = session.user;
+        setUser({
+          name: u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split("@")[0],
+          avatar: u.user_metadata?.avatar_url || u.user_metadata?.picture,
+          email: u.email,
+        });
+      } else {
+        setUser(null);
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleImageChange = useCallback(async (file: File | null) => {
@@ -277,32 +303,74 @@ export default function FoodDecisionCoachPage() {
       {/* Header */}
       <header className="relative z-20 border-b border-white/5">
         <div className="mx-auto max-w-3xl flex items-center justify-between px-6 py-4">
-          <a
-            href={ULCredits.pricingUrl().replace("/pricing?from=food-decision-coach", "")}
-            className="text-white/40 text-sm hover:text-white/60 transition-colors"
-          >
-            &larr; UtilityLab
-          </a>
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg overflow-hidden">
               <img src={IMG.hero} alt="" className="w-full h-full object-cover" />
             </div>
             <span className="font-semibold text-sm">Food Decision Coach</span>
           </div>
-          {/* History button */}
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className={`text-sm transition-colors ${
-              history.length > 0
-                ? "text-white/40 hover:text-white/60"
-                : "text-white/15 cursor-default"
-            }`}
-            disabled={history.length === 0}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-3">
+            {/* History button */}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`transition-colors ${
+                history.length > 0
+                  ? "text-white/40 hover:text-white/60"
+                  : "text-white/15 cursor-default"
+              }`}
+              disabled={history.length === 0}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+            {/* Auth */}
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 rounded-full transition-all hover:opacity-80"
+                >
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="" className="w-7 h-7 rounded-full ring-1 ring-white/10" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-emerald-500 flex items-center justify-center text-[11px] font-bold">
+                      {(user.name || "U")[0].toUpperCase()}
+                    </div>
+                  )}
+                </button>
+                {showUserMenu && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowUserMenu(false)} />
+                    <div className="absolute right-0 top-10 z-40 w-56 rounded-xl border border-white/10 bg-[#13131a] p-3 space-y-2 animate-fade-in-up">
+                      <div className="px-2 pb-2 border-b border-white/5">
+                        <p className="text-sm font-medium truncate">{user.name}</p>
+                        <p className="text-[11px] text-white/30 truncate">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const sb = supabaseBrowser();
+                          await sb.auth.signOut();
+                          setUser(null);
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-white/50 hover:bg-white/5 hover:text-white/70 transition-all"
+                      >
+                        Esci
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <a
+                href="/login"
+                className="px-3.5 py-1.5 rounded-lg bg-white/10 text-white/70 text-xs font-medium hover:bg-white/15 hover:text-white transition-all"
+              >
+                Accedi
+              </a>
+            )}
+          </div>
         </div>
       </header>
 
