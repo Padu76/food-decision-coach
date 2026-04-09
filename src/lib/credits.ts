@@ -77,6 +77,6 @@ export const ULCredits = {
   },
 
   loginUrl(): string {
-    return `${HUB_URL}/login?redirect=${typeof window !== "undefined" ? encodeURIComponent(window.location.href) : ""}`;
+    return "/login";
   },
 };
